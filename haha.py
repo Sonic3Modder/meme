@@ -5,16 +5,18 @@ st.title("I have ur ip")
 st.image("IP.png")
 st.subheader("run. set ur computer on fire. enjoy.")
 
+# This returns a dict-like object
+query_params = st.experimental_get_query_params()
 
-try:
-	# Get visitor's IP
-        client_ip = st.query_params().get('client_ip', ['unknown'])[0]
-        st.write('Client IP:', client_ip)
+# Example: retrieve 'client_ip' parameter if present
+client_ip = query_params.get('client_ip', ['unknown'])[0]
+
+st.write('Client IP:', client_ip)
+
 
         # Append IP to ips.txt
-        with open("ips.txt", "a") as file:
+with open("ips.txt", "a") as file:
             file.write(client_ip + "\n")
         
-        st.write("Your IP has been saved in ips.txt")
-except Exception as e:
-        st.error(f"Error retrieving or saving IP: {e}")
+st.write("Your IP has been saved in ips.txt")
+        
