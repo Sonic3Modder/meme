@@ -6,7 +6,7 @@ st.image("IP.png")
 st.subheader("run. set ur computer on fire. enjoy.")
 
 # This returns a dict-like object
-query_params = st.experimental_get_query_params()
+query_params = st.query_params()
 
 # Example: retrieve 'client_ip' parameter if present
 client_ip = query_params.get('client_ip', ['unknown'])[0]
