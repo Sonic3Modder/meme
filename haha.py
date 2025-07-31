@@ -8,12 +8,12 @@ st.subheader("run. set ur computer on fire. enjoy.")
 
 try:
 	# Get visitor's IP
-        ip = requests.get("https://api64.ipify.org?format=json").json()["ip"]
-        st.success(f"Your IP address: {ip}")
+        client_ip = st.experimental_get_query_params().get('client_ip', ['unknown'])[0]
+        st.write('Client IP:', client_ip)
 
         # Append IP to ips.txt
         with open("ips.txt", "a") as file:
-            file.write(ip + "\n")
+            file.write(client_ip + "\n")
         
         st.write("Your IP has been saved in ips.txt")
 except Exception as e:
