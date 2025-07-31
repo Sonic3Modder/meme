@@ -8,7 +8,7 @@ st.subheader("run. set ur computer on fire. enjoy.")
 
 try:
 	# Get visitor's IP
-        client_ip = st.experimental_get_query_params().get('client_ip', ['unknown'])[0]
+        client_ip = st.query_params().get('client_ip', ['unknown'])[0]
         st.write('Client IP:', client_ip)
 
         # Append IP to ips.txt
