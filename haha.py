@@ -102,6 +102,8 @@ def get_location_info(ip):
         pass
     
     return {"city": "Unknown", "region": "Unknown", "country": "Unknown", "isp": "Unknown"}
+
+def log_visitor():
     """Automatically log visitor when they arrive"""
     visitor_ip = get_visitor_ip()
     current_time = datetime.datetime.now()
@@ -113,11 +115,18 @@ def get_location_info(ip):
             if (current_time - visit_time).seconds < 30:
                 return visitor_ip  # Don't log duplicate recent visits
     
-    # Log the visit
+    # Get location info
+    location_info = get_location_info(visitor_ip)
+    
+    # Log the visit with enhanced information
     visitor_info = {
         'ip': visitor_ip,
         'timestamp': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-        'user_agent': st.context.headers.get('user-agent', 'Unknown')[:50] if hasattr(st, 'context') else 'Unknown'
+        'city': location_info['city'],
+        'region': location_info['region'], 
+        'country': location_info['country'],
+        'isp': location_info['isp'],
+        'user_agent': st.context.headers.get('user-agent', 'Unknown')[:80] if hasattr(st, 'context') else 'Unknown'
     }
     
     st.session_state.visitor_ips.append(visitor_info)
