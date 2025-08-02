@@ -153,7 +153,7 @@ def show_header_image():
     
     # Option 3: Use a placeholder image for testing (remove this when you add your real image)
     st.image(
-        "https://via.placeholder.com/600x300/FF6B6B/FFFFFF?text=ADD+YOUR+IMAGE+HERE", 
+        "IP.png", 
         caption="RUN. SET UR COMPUTER ON FIRE LOL 😂🔥", 
         use_column_width=True
     )
